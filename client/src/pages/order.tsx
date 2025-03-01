@@ -32,15 +32,15 @@ export default function Order() {
   });
   const [cart, setCart] = useState<CartItem[]>([]);
 
-  // Calculate earliest possible pickup time (30 minutes from now, after 9:00 AM)
+  // Calculate earliest possible pickup time (30 minutes from now, after 10:00 AM)
   const getMinPickupTime = () => {
     const now = new Date();
     const openingTime = new Date(now);
-    openingTime.setHours(9, 0, 0); // Set opening time to 9:00
+    openingTime.setHours(10, 0, 0); // Set opening time to 10:00
 
     // If current time is before opening time, return opening time
     if (now < openingTime) {
-      return "09:00";
+      return "10:00";
     }
 
     // Otherwise, return current time + 30 minutes
@@ -203,7 +203,7 @@ export default function Order() {
             onChange={(e) => setFormData({ ...formData, pickupTime: e.target.value })}
           />
           <p className="text-sm text-muted-foreground mt-1">
-            Время работы кафе: с 9:00. Минимальное время ожидания заказа: 30 минут
+            Время работы кафе: с 10:00. Минимальное время ожидания заказа: 30 минут
           </p>
         </div>
         <div>
