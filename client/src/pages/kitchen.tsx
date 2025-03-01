@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import OrderStatus from "@/components/order-status";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { type Order, type MenuItem, type OrderItem } from "@shared/schema";
+import { Loader2 } from "lucide-react";
 
 const statusFlow = {
   pending: "preparing",
@@ -23,7 +24,7 @@ const statusTranslations = {
 export default function Kitchen() {
   const { toast } = useToast();
 
-  const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({
+  const { data: orders = [], isLoading: ordersLoading, error: ordersError } = useQuery<Order[]>({
     queryKey: ["/api/orders"],
     refetchInterval: 5000, // Обновление каждые 5 секунд
   });
@@ -48,8 +49,20 @@ export default function Kitchen() {
     },
   });
 
+  if (ordersError) {
+    return (
+      <div className="text-center text-red-500">
+        Ошибка при загрузке заказов. Пожалуйста, обновите страницу.
+      </div>
+    );
+  }
+
   if (ordersLoading || menuLoading) {
-    return <div>Загрузка...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   const itemsMap = new Map(menuItems.map((item) => [item.id, item]));
@@ -82,52 +95,61 @@ export default function Kitchen() {
     return buttonText;
   };
 
-  const renderOrderCard = (order: Order) => (
-    <Card key={order.id} className="mb-4">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Заказ #{order.id}</CardTitle>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">
-            Время получения: {order.pickupTime}
-          </span>
-          <OrderStatus order={order} />
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
-          {(order.items as OrderItem[]).map((item) => {
-            const menuItem = itemsMap.get(item.menuItemId);
-            return (
-              <div key={item.menuItemId} className="flex justify-between">
-                <span>
-                  {item.quantity}x {menuItem?.name}
-                </span>
-                {item.notes && (
-                  <span className="text-sm text-muted-foreground">
-                    Примечание: {item.notes}
+  const renderOrderCard = (order: Order) => {
+    if (!order || !order.items) return null;
+
+    const orderItems = order.items as OrderItem[];
+    if (!Array.isArray(orderItems)) return null;
+
+    return (
+      <Card key={order.id} className="mb-4">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Заказ #{order.id}</CardTitle>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              Время получения: {order.pickupTime}
+            </span>
+            <OrderStatus order={order} />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            {orderItems.map((item) => {
+              const menuItem = itemsMap.get(item.menuItemId);
+              if (!menuItem) return null;
+
+              return (
+                <div key={item.menuItemId} className="flex justify-between">
+                  <span>
+                    {item.quantity}x {menuItem.name}
                   </span>
-                )}
+                  {item.notes && (
+                    <span className="text-sm text-muted-foreground">
+                      Примечание: {item.notes}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+            {order.specialInstructions && (
+              <div className="mt-4 text-sm text-muted-foreground">
+                <strong>Особые инструкции:</strong> {order.specialInstructions}
               </div>
-            );
-          })}
-          {order.specialInstructions && (
-            <div className="mt-4 text-sm text-muted-foreground">
-              <strong>Особые инструкции:</strong> {order.specialInstructions}
-            </div>
+            )}
+          </div>
+          {!["completed", "cancelled"].includes(order.status) && (
+            <Button
+              className="mt-4 w-full"
+              onClick={() => handleUpdateStatus(order)}
+              disabled={updateStatusMutation.isPending}
+            >
+              {getNextStatusButton(order.status)}
+            </Button>
           )}
-        </div>
-        {!["completed", "cancelled"].includes(order.status) && (
-          <Button
-            className="mt-4 w-full"
-            onClick={() => handleUpdateStatus(order)}
-            disabled={updateStatusMutation.isPending}
-          >
-            {getNextStatusButton(order.status)}
-          </Button>
-        )}
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -136,12 +158,20 @@ export default function Kitchen() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <h2 className="text-xl font-semibold mb-4">Активные заказы</h2>
-          {activeOrders.map(renderOrderCard)}
+          {activeOrders.length === 0 ? (
+            <p className="text-muted-foreground">Нет активных заказов</p>
+          ) : (
+            activeOrders.map(renderOrderCard)
+          )}
         </div>
 
         <div>
           <h2 className="text-xl font-semibold mb-4">Выполненные заказы</h2>
-          {completedOrders.slice(0, 5).map(renderOrderCard)}
+          {completedOrders.length === 0 ? (
+            <p className="text-muted-foreground">Нет выполненных заказов</p>
+          ) : (
+            completedOrders.slice(0, 5).map(renderOrderCard)
+          )}
         </div>
       </div>
     </div>
