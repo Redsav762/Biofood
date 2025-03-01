@@ -66,7 +66,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       secret: 'your-secret-key',
       resave: false,
       saveUninitialized: false,
-      cookie: { 
+      cookie: {
         secure: false,
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
       }
@@ -150,6 +150,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Orders routes
+  app.post("/api/orders", async (req, res) => {
+    try {
+      console.log('Creating new order:', req.body);
+      const orderData = insertOrderSchema.parse(req.body);
+      const items = z.array(orderItemSchema).parse(orderData.items);
+
+      // Validate all menu items exist and are available
+      for (const item of items) {
+        const menuItem = await storage.getMenuItem(item.menuItemId);
+        if (!menuItem || !menuItem.available) {
+          console.log('Menu item not available:', item.menuItemId);
+          return res.status(400).json({
+            error: `Menu item ${item.menuItemId} not available`,
+          });
+        }
+      }
+
+      const order = await storage.createOrder(orderData);
+      console.log('Order created successfully:', order);
+      res.json(order);
+    } catch (error) {
+      console.error('Error creating order:', error);
+      res.status(400).json({ error: "Invalid order data" });
+    }
+  });
+
   app.get("/api/orders", requireRole("kitchen_staff"), async (_req, res) => {
     console.log('GET /api/orders - Fetching orders');
     try {
@@ -186,6 +212,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const paymentData = paymentSchema.parse(req.body);
       const paymentType = req.query.type || "prepayment";
 
+      console.log('Processing payment for order:', orderId, 'type:', paymentType);
+
       const order = await storage.getOrder(orderId);
       if (!order) {
         return res.status(404).json({ error: "Order not found" });
@@ -202,8 +230,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updateOrderStatus(orderId, "preparing");
       await storage.updateOrderPaymentStatus(orderId, newPaymentStatus);
 
+      console.log('Payment processed successfully');
       res.json({ success: true });
     } catch (error) {
+      console.error('Payment processing error:', error);
       res.status(400).json({ error: "Invalid payment data" });
     }
   });

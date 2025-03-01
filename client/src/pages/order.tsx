@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { apiRequest } from "@/lib/queryClient";
 import { type MenuItem, type Order } from "@shared/schema";
 import PaymentForm from "@/components/payment-form";
+import { Loader2 } from "lucide-react";
 
 interface OrderFormData {
   name: string;
@@ -48,40 +49,60 @@ export default function Order() {
 
   const orderMutation = useMutation({
     mutationFn: async () => {
-      const userResponse = await apiRequest("POST", "/api/users", {
-        name: formData.name,
-        phone: formData.phone,
-        email: formData.email,
-      });
-      const userData = await userResponse.json();
+      try {
+        // Создаем пользователя
+        const userResponse = await apiRequest("POST", "/api/users", {
+          name: formData.name,
+          phone: formData.phone,
+          email: formData.email,
+        });
 
-      const orderResponse = await apiRequest("POST", "/api/orders", {
-        userId: userData.id,
-        items: cart.map(({ item, quantity, notes }) => ({
-          menuItemId: item.id,
-          quantity,
-          notes: notes || "",
-        })),
-        total: cart.reduce(
-          (sum, { item, quantity }) => sum + item.price * quantity,
-          0
-        ),
-        pickupTime: formData.pickupTime,
-        specialInstructions: formData.specialInstructions,
-        paymentMethod: formData.paymentMethod,
-      });
-      const orderData: Order = await orderResponse.json();
-      return orderData;
+        if (!userResponse.ok) {
+          throw new Error("Failed to create user");
+        }
+
+        const userData = await userResponse.json();
+
+        // Создаем заказ
+        const orderResponse = await apiRequest("POST", "/api/orders", {
+          userId: userData.id,
+          items: cart.map(({ item, quantity, notes }) => ({
+            menuItemId: item.id,
+            quantity,
+            notes: notes || "",
+          })),
+          total: cart.reduce(
+            (sum, { item, quantity }) => sum + item.price * quantity,
+            0
+          ),
+          pickupTime: formData.pickupTime,
+          specialInstructions: formData.specialInstructions,
+          paymentMethod: formData.paymentMethod,
+        });
+
+        if (!orderResponse.ok) {
+          throw new Error("Failed to create order");
+        }
+
+        const orderData: Order = await orderResponse.json();
+        return orderData;
+      } catch (error) {
+        console.error('Order creation error:', error);
+        throw error;
+      }
     },
     onSuccess: (data) => {
       sessionStorage.removeItem('cartData');
+      setPaymentStatus("completed");
       toast({
         title: "Заказ успешно оформлен!",
         description: `Ваш заказ #${data.id} принят. Время получения: ${formData.pickupTime}`,
       });
-      setLocation("/menu");
+      setTimeout(() => setLocation("/menu"), 2000);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Order mutation error:', error);
+      setPaymentStatus("pending");
       toast({
         title: "Ошибка",
         description: "Не удалось оформить заказ. Пожалуйста, попробуйте снова.",
@@ -124,19 +145,23 @@ export default function Order() {
     setPaymentStatus("processing");
     setFormData({...formData, paymentMethod: paymentData.paymentMethod});
     try {
-      orderMutation.mutate();
+      await orderMutation.mutateAsync();
     } catch (error) {
-      setPaymentStatus("pending");
-      toast({
-        title: "Ошибка",
-        description: "Не удалось оформить заказ. Пожалуйста, попробуйте снова.",
-        variant: "destructive",
-      });
+      // Ошибка уже обработана в onError мутации
     }
   };
 
   if (cart.length === 0) {
     return null;
+  }
+
+  if (paymentStatus === "processing") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin mb-4" />
+        <p className="text-lg">Обработка заказа...</p>
+      </div>
+    );
   }
 
   return (
