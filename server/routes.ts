@@ -11,6 +11,7 @@ import {
 import { z } from "zod";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
+import session from "express-session";
 
 const scryptAsync = promisify(scrypt);
 
@@ -45,8 +46,27 @@ function requireRole(role: string) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up session middleware
+  app.use(
+    session({
+      store: storage.sessionStore,
+      secret: 'your-secret-key',
+      resave: false,
+      saveUninitialized: false,
+      cookie: { secure: false } // set to true if using https
+    })
+  );
+
   // Auth routes
-  app.post("/api/register", async (req, res) => {
+  app.get("/api/user", async (req: any, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    const user = await storage.getUser(req.session.userId);
+    res.json(user);
+  });
+
+  app.post("/api/register", async (req: any, res) => {
     try {
       const userData = insertUserSchema.parse(req.body);
 
@@ -56,8 +76,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "User already exists" });
       }
 
-      // Hash password
-      const hashedPassword = await hashPassword(userData.password);
+      // Hash password if provided
+      let hashedPassword = null;
+      if (userData.password) {
+        hashedPassword = await hashPassword(userData.password);
+      }
 
       // Create user
       const user = await storage.createUser({
@@ -74,7 +97,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/login", async (req, res) => {
+  app.post("/api/login", async (req: any, res) => {
     try {
       const { phone, password } = loginSchema.parse(req.body);
 
@@ -90,7 +113,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/logout", (req, res) => {
+  app.post("/api/logout", (req: any, res) => {
     req.session.destroy(() => {
       res.json({ success: true });
     });
