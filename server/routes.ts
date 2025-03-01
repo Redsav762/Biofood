@@ -1,7 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertOrderSchema, orderItemSchema } from "@shared/schema";
+import {
+  insertUserSchema,
+  insertOrderSchema,
+  orderItemSchema,
+  paymentSchema
+} from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -85,6 +90,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(400).json({ error: "Invalid status" });
     }
+  });
+
+  // Payment routes
+  app.post("/api/orders/:id/payment", async (req, res) => {
+    try {
+      const orderId = parseInt(req.params.id);
+      const paymentData = paymentSchema.parse(req.body);
+
+      const order = await storage.getOrder(orderId);
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+
+      await storage.createPayment({
+        orderId,
+        amount: order.total,
+        paymentMethod: paymentData.paymentMethod,
+      });
+
+      await storage.updateOrderPaymentStatus(orderId, "completed");
+
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ error: "Invalid payment data" });
+    }
+  });
+
+  // Analytics routes
+  app.get("/api/analytics/popular-items", async (_req, res) => {
+    const analytics = await storage.getPopularItems();
+    res.json(analytics);
+  });
+
+  app.get("/api/analytics/time-slots", async (_req, res) => {
+    const analytics = await storage.getOrdersByTimeSlot();
+    res.json(analytics);
+  });
+
+  // Notifications routes
+  app.get("/api/notifications/:userId", async (req, res) => {
+    const userId = parseInt(req.params.userId);
+    const notifications = await storage.getUserNotifications(userId);
+    res.json(notifications);
+  });
+
+  app.patch("/api/notifications/:id/read", async (req, res) => {
+    const id = parseInt(req.params.id);
+    await storage.markNotificationAsRead(id);
+    res.json({ success: true });
   });
 
   const httpServer = createServer(app);

@@ -54,6 +54,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <Link href="/kitchen">
                   <Button variant="ghost">Кухня</Button>
                 </Link>
+                <Link href="/analytics">
+                  <Button variant="ghost">Аналитика</Button>
+                </Link>
               </div>
             </nav>
           </div>

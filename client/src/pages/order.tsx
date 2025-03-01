@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { apiRequest } from "@/lib/queryClient";
 import { type MenuItem, type Order } from "@shared/schema";
+import PaymentForm from "@/components/payment-form";
 
 interface OrderFormData {
   name: string;
@@ -14,6 +15,7 @@ interface OrderFormData {
   email?: string;
   pickupTime: string;
   specialInstructions?: string;
+  paymentMethod?: string;
 }
 
 interface CartItem {
@@ -31,6 +33,8 @@ export default function Order() {
     pickupTime: "10:00",
   });
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [showPayment, setShowPayment] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<"pending" | "processing" | "completed">("pending");
 
   // Load cart data from sessionStorage on component mount
   useEffect(() => {
@@ -64,6 +68,7 @@ export default function Order() {
         ),
         pickupTime: formData.pickupTime,
         specialInstructions: formData.specialInstructions,
+        paymentMethod: formData.paymentMethod,
       });
       const orderData: Order = await orderResponse.json();
       return orderData;
@@ -107,7 +112,27 @@ export default function Order() {
       return;
     }
 
-    orderMutation.mutate();
+    setShowPayment(true);
+  };
+
+  const handlePayment = async (paymentData: {
+    cardNumber: string;
+    expiryDate: string;
+    cvv: string;
+    paymentMethod: string;
+  }) => {
+    setPaymentStatus("processing");
+    setFormData({...formData, paymentMethod: paymentData.paymentMethod});
+    try {
+      orderMutation.mutate();
+    } catch (error) {
+      setPaymentStatus("pending");
+      toast({
+        title: "Ошибка",
+        description: "Не удалось оформить заказ. Пожалуйста, попробуйте снова.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (cart.length === 0) {
@@ -158,59 +183,69 @@ export default function Order() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <Input
-            placeholder="Имя *"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          />
-        </div>
-        <div>
-          <Input
-            placeholder="Телефон *"
-            value={formData.phone}
-            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-          />
-        </div>
-        <div>
-          <Input
-            type="email"
-            placeholder="Email (необязательно)"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-          />
-        </div>
-        <div>
-          <Input
-            type="time"
-            min="10:00"
-            max="22:00"
-            required
-            value={formData.pickupTime}
-            onChange={(e) => setFormData({ ...formData, pickupTime: e.target.value })}
-          />
-          <p className="text-sm text-muted-foreground mt-1">
-            Время работы кафе: с 10:00 до 22:00
-          </p>
-        </div>
-        <div>
-          <Textarea
-            placeholder="Дополнительные инструкции (необязательно)"
-            value={formData.specialInstructions}
-            onChange={(e) =>
-              setFormData({ ...formData, specialInstructions: e.target.value })
-            }
-          />
-        </div>
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={orderMutation.isPending}
-        >
-          {orderMutation.isPending ? "Оформление заказа..." : "Оформить заказ"}
-        </Button>
-      </form>
+      {!showPayment ? (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Input
+              placeholder="Имя *"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            />
+          </div>
+          <div>
+            <Input
+              placeholder="Телефон *"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            />
+          </div>
+          <div>
+            <Input
+              type="email"
+              placeholder="Email (необязательно)"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
+          </div>
+          <div>
+            <Input
+              type="time"
+              min="10:00"
+              max="22:00"
+              required
+              value={formData.pickupTime}
+              onChange={(e) => setFormData({ ...formData, pickupTime: e.target.value })}
+            />
+            <p className="text-sm text-muted-foreground mt-1">
+              Время работы кафе: с 10:00 до 22:00
+            </p>
+          </div>
+          <div>
+            <Textarea
+              placeholder="Дополнительные инструкции (необязательно)"
+              value={formData.specialInstructions}
+              onChange={(e) =>
+                setFormData({ ...formData, specialInstructions: e.target.value })
+              }
+            />
+          </div>
+          <Button
+            type="submit"
+            className="w-full"
+          >
+            Продолжить к оплате
+          </Button>
+        </form>
+      ) : (
+        <PaymentForm
+          amount={cart.reduce(
+            (sum, { item, quantity }) => sum + item.price * quantity,
+            0
+          )}
+          onSubmit={handlePayment}
+          isProcessing={paymentStatus === "processing"}
+        />
+      )}
     </div>
   );
 }

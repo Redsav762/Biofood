@@ -8,6 +8,7 @@ import Menu from "@/pages/menu";
 import Order from "@/pages/order";
 import Kitchen from "@/pages/kitchen";
 import NotFound from "@/pages/not-found";
+import Analytics from "@/pages/analytics";
 
 function Router() {
   return (
@@ -17,6 +18,7 @@ function Router() {
         <Route path="/menu" component={Menu} />
         <Route path="/order" component={Order} />
         <Route path="/kitchen" component={Kitchen} />
+        <Route path="/analytics" component={Analytics} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
