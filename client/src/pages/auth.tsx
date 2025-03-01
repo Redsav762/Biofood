@@ -4,6 +4,13 @@ import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
 import { type InsertUser } from "@shared/schema";
 
@@ -70,13 +77,29 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
     <div className="w-full">
       <form onSubmit={handleSubmit} className="space-y-4">
         {!isLogin && (
-          <Input
-            placeholder="Имя *"
-            value={formData.name}
-            onChange={(e) =>
-              setFormData({ ...formData, name: e.target.value })
-            }
-          />
+          <>
+            <Input
+              placeholder="Имя *"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
+            />
+            <Select
+              value={formData.role}
+              onValueChange={(value) =>
+                setFormData({ ...formData, role: value })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите роль" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="customer">Посетитель</SelectItem>
+                <SelectItem value="kitchen_staff">Работник кухни</SelectItem>
+              </SelectContent>
+            </Select>
+          </>
         )}
         <Input
           placeholder="Телефон *"
