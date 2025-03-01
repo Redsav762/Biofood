@@ -1,7 +1,8 @@
 import { 
   type User, type InsertUser,
   type MenuItem, type InsertMenuItem,
-  type Order, type InsertOrder 
+  type Order, type InsertOrder,
+  type OrderItem
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -26,12 +27,17 @@ export interface IStorage {
   getOrders(): Promise<Order[]>;
   updateOrderStatus(id: number, status: string): Promise<void>;
   updateOrderPaymentStatus(id: number, status: string): Promise<void>;
+
+  // Analytics operations
+  getPopularItems(): Promise<{ id: number; name: string; quantity: number; totalAmount: number }[]>;
+  getOrdersByTimeSlot(): Promise<{ timeSlot: string; orderCount: number }[]>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private menuItems: Map<number, MenuItem>;
   private orders: Map<number, Order>;
+  private analytics: Map<number, any>; //This line was added.
   private currentIds: { users: number; menuItems: number; orders: number };
   public sessionStore: session.Store;
 
@@ -39,6 +45,7 @@ export class MemStorage implements IStorage {
     this.users = new Map();
     this.menuItems = new Map();
     this.orders = new Map();
+    this.analytics = new Map(); //This line was added.
     this.currentIds = { users: 1, menuItems: 1, orders: 1 };
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // 24 hours
@@ -214,6 +221,51 @@ export class MemStorage implements IStorage {
     if (order) {
       this.orders.set(id, { ...order, paymentStatus: status });
     }
+  }
+
+  // Analytics operations
+  async getPopularItems(): Promise<{ id: number; name: string; quantity: number; totalAmount: number }[]> {
+    const items = new Map<number, { name: string; quantity: number; totalAmount: number }>();
+
+    // Собираем статистику из заказов
+    for (const order of this.orders.values()) {
+      const orderItems = order.items as OrderItem[];
+      for (const item of orderItems) {
+        const menuItem = await this.getMenuItem(item.menuItemId);
+        if (!menuItem) continue;
+
+        const existing = items.get(item.menuItemId) || { 
+          name: menuItem.name, 
+          quantity: 0, 
+          totalAmount: 0 
+        };
+
+        items.set(item.menuItemId, {
+          name: menuItem.name,
+          quantity: existing.quantity + item.quantity,
+          totalAmount: existing.totalAmount + (menuItem.price * item.quantity)
+        });
+      }
+    }
+
+    return Array.from(items.entries()).map(([id, data]) => ({
+      id,
+      ...data
+    }));
+  }
+
+  async getOrdersByTimeSlot(): Promise<{ timeSlot: string; orderCount: number }[]> {
+    const timeSlots = new Map<string, number>();
+
+    for (const order of this.orders.values()) {
+      const timeSlot = order.pickupTime;
+      timeSlots.set(timeSlot, (timeSlots.get(timeSlot) || 0) + 1);
+    }
+
+    return Array.from(timeSlots.entries()).map(([timeSlot, orderCount]) => ({
+      timeSlot,
+      orderCount
+    })).sort((a, b) => a.timeSlot.localeCompare(b.timeSlot));
   }
 }
 
