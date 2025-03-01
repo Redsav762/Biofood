@@ -32,12 +32,29 @@ export default function Order() {
   });
   const [cart, setCart] = useState<CartItem[]>([]);
 
-  // Calculate earliest possible pickup time (30 minutes from now)
+  // Calculate earliest possible pickup time (30 minutes from now, after 9:00 AM)
   const getMinPickupTime = () => {
     const now = new Date();
+    const openingTime = new Date(now);
+    openingTime.setHours(9, 0, 0); // Set opening time to 9:00
+
+    // If current time is before opening time, return opening time
+    if (now < openingTime) {
+      return "09:00";
+    }
+
+    // Otherwise, return current time + 30 minutes
     now.setMinutes(now.getMinutes() + 30);
     return now.toTimeString().slice(0, 5);
   };
+
+  const getMaxPickupTime = () => {
+    const now = new Date();
+    const closingTime = new Date(now);
+    closingTime.setHours(22, 0, 0); // Set closing time to 22:00
+    return closingTime.toTimeString().slice(0, 5);
+  };
+
 
   // Load cart data from sessionStorage on component mount
   useEffect(() => {
@@ -180,12 +197,13 @@ export default function Order() {
           <Input
             type="time"
             min={getMinPickupTime()}
+            max={getMaxPickupTime()}
             required
             value={formData.pickupTime}
             onChange={(e) => setFormData({ ...formData, pickupTime: e.target.value })}
           />
           <p className="text-sm text-muted-foreground mt-1">
-            Минимальное время ожидания: 30 минут
+            Время работы кафе: с 9:00. Минимальное время ожидания заказа: 30 минут
           </p>
         </div>
         <div>
