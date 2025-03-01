@@ -28,7 +28,11 @@ interface AuthFormData {
   role: string;
 }
 
-export default function Auth() {
+interface AuthProps {
+  onAuthSuccess?: () => void;
+}
+
+export default function Auth({ onAuthSuccess }: AuthProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isLogin, setIsLogin] = useState(true);
@@ -50,8 +54,10 @@ export default function Auth() {
         title: isLogin ? "Вход выполнен" : "Регистрация успешна",
         description: `Добро пожаловать, ${data.name}!`,
       });
-      
-      if (data.role === "kitchen_staff") {
+
+      if (onAuthSuccess) {
+        onAuthSuccess();
+      } else if (data.role === "kitchen_staff") {
         setLocation("/kitchen");
       } else {
         setLocation("/menu");
@@ -60,8 +66,8 @@ export default function Auth() {
     onError: () => {
       toast({
         title: "Ошибка",
-        description: isLogin 
-          ? "Неверный телефон или пароль" 
+        description: isLogin
+          ? "Неверный телефон или пароль"
           : "Не удалось зарегистрироваться",
         variant: "destructive",
       });
@@ -82,94 +88,82 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>{isLogin ? "Вход" : "Регистрация"}</CardTitle>
-          <CardDescription>
-            {isLogin 
-              ? "Войдите в свой аккаунт" 
-              : "Создайте новый аккаунт"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <>
-                <Input
-                  placeholder="Имя *"
-                  value={formData.name}
-                  onChange={(e) => 
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                />
-                <Select
-                  value={formData.role}
-                  onValueChange={(value) => 
-                    setFormData({ ...formData, role: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите роль" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="customer">Посетитель</SelectItem>
-                    <SelectItem value="kitchen_staff">Работник кухни</SelectItem>
-                  </SelectContent>
-                </Select>
-              </>
-            )}
+    <div className="w-full">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {!isLogin && (
+          <>
             <Input
-              placeholder="Телефон *"
-              value={formData.phone}
-              onChange={(e) => 
-                setFormData({ ...formData, phone: e.target.value })
+              placeholder="Имя *"
+              value={formData.name}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
               }
             />
-            <Input
-              type="password"
-              placeholder="Пароль *"
-              value={formData.password}
-              onChange={(e) => 
-                setFormData({ ...formData, password: e.target.value })
+            <Select
+              value={formData.role}
+              onValueChange={(value) =>
+                setFormData({ ...formData, role: value })
               }
-            />
-            {!isLogin && (
-              <Input
-                type="email"
-                placeholder="Email (необязательно)"
-                value={formData.email}
-                onChange={(e) => 
-                  setFormData({ ...formData, email: e.target.value })
-                }
-              />
-            )}
-            <div className="space-y-2">
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={authMutation.isPending}
-              >
-                {authMutation.isPending
-                  ? "Загрузка..."
-                  : isLogin
-                  ? "Войти"
-                  : "Зарегистрироваться"}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full"
-                onClick={() => setIsLogin(!isLogin)}
-              >
-                {isLogin
-                  ? "Нет аккаунта? Зарегистрируйтесь"
-                  : "Уже есть аккаунт? Войдите"}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите роль" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="customer">Посетитель</SelectItem>
+                <SelectItem value="kitchen_staff">Работник кухни</SelectItem>
+              </SelectContent>
+            </Select>
+          </>
+        )}
+        <Input
+          placeholder="Телефон *"
+          value={formData.phone}
+          onChange={(e) =>
+            setFormData({ ...formData, phone: e.target.value })
+          }
+        />
+        <Input
+          type="password"
+          placeholder="Пароль *"
+          value={formData.password}
+          onChange={(e) =>
+            setFormData({ ...formData, password: e.target.value })
+          }
+        />
+        {!isLogin && (
+          <Input
+            type="email"
+            placeholder="Email (необязательно)"
+            value={formData.email}
+            onChange={(e) =>
+              setFormData({ ...formData, email: e.target.value })
+            }
+          />
+        )}
+        <div className="space-y-2">
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={authMutation.isPending}
+          >
+            {authMutation.isPending
+              ? "Загрузка..."
+              : isLogin
+              ? "Войти"
+              : "Зарегистрироваться"}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="w-full"
+            onClick={() => setIsLogin(!isLogin)}
+          >
+            {isLogin
+              ? "Нет аккаунта? Зарегистрируйтесь"
+              : "Уже есть аккаунт? Войдите"}
+          </Button>
+        </div>
+      </form>
     </div>
   );
 }
