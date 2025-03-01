@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select";
 
 export default function Menu() {
-  const [, setLocation] = useLocation();
+  const [, navigate] = useLocation();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [cart, setCart] = useState<Array<{ item: MenuItem; quantity: number }>>([]);
 
@@ -25,7 +25,7 @@ export default function Menu() {
     return <div>Loading...</div>;
   }
 
-  const categories = ["all", ...new Set(menuItems.map((item) => item.category))];
+  const categories = ["all", ...Array.from(new Set(menuItems.map((item) => item.category)))];
   const filteredItems = selectedCategory === "all"
     ? menuItems
     : menuItems.filter((item) => item.category === selectedCategory);
@@ -46,6 +46,12 @@ export default function Menu() {
     (sum, { item, quantity }) => sum + item.price * quantity,
     0
   );
+
+  const handleContinueToOrder = () => {
+    // Store cart data in sessionStorage before navigation
+    sessionStorage.setItem('cartData', JSON.stringify(cart));
+    navigate('/order');
+  };
 
   return (
     <div className="space-y-6">
@@ -88,9 +94,7 @@ export default function Menu() {
                 })}
               </span>
             </div>
-            <Button 
-              onClick={() => setLocation("/order", { state: { cart } })}
-            >
+            <Button onClick={handleContinueToOrder}>
               Continue to Order
             </Button>
           </div>

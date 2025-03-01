@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -22,9 +22,18 @@ export default function Order() {
     name: "",
     phone: "",
   });
+  const [cart, setCart] = useState<Array<{ item: MenuItem; quantity: number }>>([]);
 
-  // Get cart from location state
-  const cart = (useLocation()[0] as any).state?.cart || [];
+  // Load cart data from sessionStorage on component mount
+  useEffect(() => {
+    const savedCart = sessionStorage.getItem('cartData');
+    if (savedCart) {
+      setCart(JSON.parse(savedCart));
+    } else {
+      // If no cart data, redirect back to menu
+      setLocation("/menu");
+    }
+  }, [setLocation]);
 
   const orderMutation = useMutation({
     mutationFn: async () => {
@@ -37,14 +46,13 @@ export default function Order() {
 
       const orderResponse = await apiRequest("POST", "/api/orders", {
         userId: userData.id,
-        items: cart.map(({ item, quantity }: { item: MenuItem; quantity: number }) => ({
+        items: cart.map(({ item, quantity }) => ({
           menuItemId: item.id,
           quantity,
           notes: "",
         })),
         total: cart.reduce(
-          (sum: number, { item, quantity }: { item: MenuItem; quantity: number }) =>
-            sum + item.price * quantity,
+          (sum, { item, quantity }) => sum + item.price * quantity,
           0
         ),
         specialInstructions: formData.specialInstructions,
@@ -53,6 +61,8 @@ export default function Order() {
       return orderData;
     },
     onSuccess: (data) => {
+      // Clear cart data after successful order
+      sessionStorage.removeItem('cartData');
       toast({
         title: "Order placed successfully!",
         description: `Your order #${data.id} has been received.`,
@@ -82,7 +92,6 @@ export default function Order() {
   };
 
   if (cart.length === 0) {
-    setLocation("/menu");
     return null;
   }
 
@@ -92,7 +101,7 @@ export default function Order() {
 
       <div className="bg-white rounded-lg p-6 shadow-sm">
         <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
-        {cart.map(({ item, quantity }: { item: MenuItem; quantity: number }) => (
+        {cart.map(({ item, quantity }) => (
           <div key={item.id} className="flex justify-between py-2">
             <span>
               {quantity}x {item.name}
@@ -111,8 +120,7 @@ export default function Order() {
             <span>
               {(
                 cart.reduce(
-                  (sum: number, { item, quantity }: { item: MenuItem; quantity: number }) =>
-                    sum + item.price * quantity,
+                  (sum, { item, quantity }) => sum + item.price * quantity,
                   0
                 ) / 100
               ).toLocaleString("en-US", {
