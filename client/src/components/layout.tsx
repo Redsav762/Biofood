@@ -11,15 +11,15 @@ import {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#F7F7F7]">
+    <div className="min-h-screen bg-[#F0FFF4]">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 items-center">
           <div className="mr-4 flex">
             <Link href="/" className="mr-6 flex items-center space-x-2">
-              <span className="font-bold text-xl">Biofood A8</span>
+              <span className="font-bold text-xl">Биофуд А8</span>
             </Link>
           </div>
-          
+
           <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
             <nav className="flex items-center space-x-2">
               <Sheet>
@@ -30,29 +30,29 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </SheetTrigger>
                 <SheetContent side="left">
                   <SheetHeader>
-                    <SheetTitle>Menu</SheetTitle>
+                    <SheetTitle>Меню</SheetTitle>
                   </SheetHeader>
                   <div className="flex flex-col space-y-4 mt-4">
                     <Link href="/menu">
                       <Button variant="ghost" className="w-full justify-start">
-                        Menu
+                        Меню
                       </Button>
                     </Link>
                     <Link href="/kitchen">
                       <Button variant="ghost" className="w-full justify-start">
-                        Kitchen
+                        Кухня
                       </Button>
                     </Link>
                   </div>
                 </SheetContent>
               </Sheet>
-              
+
               <div className="hidden md:flex md:items-center md:space-x-2">
                 <Link href="/menu">
-                  <Button variant="ghost">Menu</Button>
+                  <Button variant="ghost">Меню</Button>
                 </Link>
                 <Link href="/kitchen">
-                  <Button variant="ghost">Kitchen</Button>
+                  <Button variant="ghost">Кухня</Button>
                 </Link>
               </div>
             </nav>
