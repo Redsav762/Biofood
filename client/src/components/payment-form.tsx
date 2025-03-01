@@ -26,9 +26,11 @@ export default function PaymentForm({ amount, onSubmit, isProcessing }: PaymentF
     paymentMethod: "card",
   });
 
+  const prepaymentAmount = Math.floor(amount * 0.5); // 50% от суммы заказа
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!paymentData.cardNumber || !paymentData.expiryDate || !paymentData.cvv) {
       toast({
         title: "Ошибка",
@@ -126,18 +128,28 @@ export default function PaymentForm({ amount, onSubmit, isProcessing }: PaymentF
             </>
           )}
 
-          <div className="text-lg font-semibold">
-            Сумма к оплате:{" "}
-            {amount.toLocaleString("ru-RU", {
-              style: "currency",
-              currency: "RUB",
-            })}
+          <div className="space-y-2">
+            <div className="text-lg font-semibold">
+              Предоплата (50%):{" "}
+              {prepaymentAmount.toLocaleString("ru-RU", {
+                style: "currency",
+                currency: "RUB",
+              })}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Оставшаяся сумма:{" "}
+              {prepaymentAmount.toLocaleString("ru-RU", {
+                style: "currency",
+                currency: "RUB",
+              })}
+              {" "}оплачивается при получении заказа
+            </div>
           </div>
         </CardContent>
 
         <CardFooter>
           <Button type="submit" className="w-full" disabled={isProcessing}>
-            {isProcessing ? "Обработка..." : "Оплатить"}
+            {isProcessing ? "Обработка..." : "Оплатить предоплату"}
           </Button>
         </CardFooter>
       </form>

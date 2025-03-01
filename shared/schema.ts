@@ -26,6 +26,7 @@ export const payments = pgTable("payments", {
   status: text("status").notNull().default("pending"),
   paymentMethod: text("payment_method").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  paymentType: text("payment_type").notNull(), // "prepayment" or "full_payment"
 });
 
 export const orders = pgTable("orders", {

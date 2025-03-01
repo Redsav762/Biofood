@@ -97,19 +97,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const orderId = parseInt(req.params.id);
       const paymentData = paymentSchema.parse(req.body);
+      const paymentType = req.query.type || "prepayment";
 
       const order = await storage.getOrder(orderId);
       if (!order) {
         return res.status(404).json({ error: "Order not found" });
       }
 
+      // Calculate payment amount based on type
+      const amount = paymentType === "prepayment" 
+        ? Math.floor(order.total * 0.5)  // 50% for prepayment
+        : order.total - Math.floor(order.total * 0.5); // Remaining amount
+
       await storage.createPayment({
         orderId,
-        amount: order.total,
+        amount,
         paymentMethod: paymentData.paymentMethod,
+        paymentType,
       });
 
-      await storage.updateOrderPaymentStatus(orderId, "completed");
+      // Update order payment status
+      const newPaymentStatus = paymentType === "prepayment" ? "partially_paid" : "paid";
+      await storage.updateOrderStatus(orderId, "preparing");
+      await storage.updateOrderPaymentStatus(orderId, newPaymentStatus);
 
       res.json({ success: true });
     } catch (error) {
