@@ -10,7 +10,7 @@ export default function Home() {
       {/* Hero Section */}
       <div className="text-center space-y-4">
         <h1 className="text-4xl font-bold tracking-tight">
-          Добро пожаловать в кафе Биофуд А8
+          Добро пожаловать в кафе Biofood A8
         </h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
           Свежая, здоровая и вкусная еда с заботой о вас. Закажите сейчас для самовывоза или обеда в кафе.
@@ -89,7 +89,7 @@ export default function Home() {
           <p className="text-lg text-muted-foreground">
             Ищете ли вы тихий уголок для работы, место для непринужденной встречи
             или пространство, чтобы насладиться качественной едой с друзьями - 
-            Биофуд А8 создает идеальную атмосферу для любого случая.
+            Biofood A8 создает идеальную атмосферу для любого случая.
           </p>
           <Button 
             variant="outline" 

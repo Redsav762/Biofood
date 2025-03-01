@@ -16,7 +16,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="container flex h-14 items-center">
           <div className="mr-4 flex">
             <Link href="/" className="mr-6 flex items-center space-x-2">
-              <span className="font-bold text-xl">Биофуд А8</span>
+              <span className="font-bold text-xl">Biofood A8</span>
             </Link>
           </div>
 
