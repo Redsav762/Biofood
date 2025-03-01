@@ -28,46 +28,9 @@ export default function Order() {
   const [formData, setFormData] = useState<OrderFormData>({
     name: "",
     phone: "",
-    pickupTime: "",
+    pickupTime: "10:00",
   });
   const [cart, setCart] = useState<CartItem[]>([]);
-
-  // Calculate earliest possible pickup time (30 minutes from now, after 10:00 AM)
-  const getMinPickupTime = () => {
-    const now = new Date();
-    const openingTime = new Date(now);
-    openingTime.setHours(10, 0, 0); // Set opening time to 10:00
-
-    // Add 30 minutes to current time
-    const minTime = new Date(now);
-    minTime.setMinutes(minTime.getMinutes() + 30);
-
-    // If current time + 30 minutes is before opening time, return opening time
-    if (minTime < openingTime) {
-      return {
-        time: "10:00",
-        message: "Время работы кафе: с 10:00"
-      };
-    }
-
-    // Format time as HH:mm
-    const formattedTime = minTime.toLocaleTimeString('ru-RU', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
-
-    return {
-      time: formattedTime,
-      message: "Минимальное время ожидания заказа: 30 минут"
-    };
-  };
-
-  const getMaxPickupTime = () => {
-    const closingTime = "22:00";
-    return closingTime;
-  };
-
 
   // Load cart data from sessionStorage on component mount
   useEffect(() => {
@@ -132,6 +95,18 @@ export default function Order() {
       });
       return;
     }
+
+    // Validate pickup time is between 10:00 and 22:00
+    const selectedTime = formData.pickupTime;
+    if (selectedTime < "10:00" || selectedTime > "22:00") {
+      toast({
+        title: "Ошибка",
+        description: "Время получения заказа должно быть между 10:00 и 22:00",
+        variant: "destructive",
+      });
+      return;
+    }
+
     orderMutation.mutate();
   };
 
@@ -209,14 +184,14 @@ export default function Order() {
         <div>
           <Input
             type="time"
-            min={getMinPickupTime().time}
-            max={getMaxPickupTime()}
+            min="10:00"
+            max="22:00"
             required
             value={formData.pickupTime}
             onChange={(e) => setFormData({ ...formData, pickupTime: e.target.value })}
           />
           <p className="text-sm text-muted-foreground mt-1">
-            {getMinPickupTime().message}
+            Время работы кафе: с 10:00 до 22:00
           </p>
         </div>
         <div>
