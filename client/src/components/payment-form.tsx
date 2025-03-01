@@ -28,25 +28,52 @@ export default function PaymentForm({ amount, onSubmit, isProcessing }: PaymentF
 
   const prepaymentAmount = Math.floor(amount * 0.5); // 50% от суммы заказа
 
+  const formatCardNumber = (value: string) => {
+    const cleaned = value.replace(/\D/g, "");
+    const limit = 16;
+    return cleaned.slice(0, limit);
+  };
+
+  const formatExpiryDate = (value: string) => {
+    const cleaned = value.replace(/\D/g, "");
+    if (cleaned.length >= 2) {
+      return `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}`;
+    }
+    return cleaned;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!paymentData.cardNumber || !paymentData.expiryDate || !paymentData.cvv) {
-      toast({
-        title: "Ошибка",
-        description: "Пожалуйста, заполните все поля",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (paymentData.paymentMethod === "card") {
+      const cardNumber = paymentData.cardNumber.replace(/\s/g, "");
 
-    if (paymentData.cardNumber.length !== 16) {
-      toast({
-        title: "Ошибка",
-        description: "Неверный номер карты",
-        variant: "destructive",
-      });
-      return;
+      if (cardNumber.length !== 16) {
+        toast({
+          title: "Ошибка",
+          description: "Номер карты должен содержать 16 цифр",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (paymentData.expiryDate.length !== 5) {
+        toast({
+          title: "Ошибка",
+          description: "Неверный формат срока действия карты (ММ/ГГ)",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (paymentData.cvv.length < 3) {
+        toast({
+          title: "Ошибка",
+          description: "CVV код должен содержать 3 цифры",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     onSubmit(paymentData);
@@ -81,14 +108,12 @@ export default function PaymentForm({ amount, onSubmit, isProcessing }: PaymentF
               <div>
                 <Label>Номер карты</Label>
                 <Input
-                  type="text"
-                  maxLength={16}
                   placeholder="1234 5678 9012 3456"
                   value={paymentData.cardNumber}
                   onChange={(e) =>
                     setPaymentData({
                       ...paymentData,
-                      cardNumber: e.target.value.replace(/\D/g, ""),
+                      cardNumber: formatCardNumber(e.target.value),
                     })
                   }
                 />
@@ -97,14 +122,12 @@ export default function PaymentForm({ amount, onSubmit, isProcessing }: PaymentF
                 <div>
                   <Label>Срок действия</Label>
                   <Input
-                    type="text"
                     placeholder="MM/YY"
-                    maxLength={5}
                     value={paymentData.expiryDate}
                     onChange={(e) =>
                       setPaymentData({
                         ...paymentData,
-                        expiryDate: e.target.value,
+                        expiryDate: formatExpiryDate(e.target.value),
                       })
                     }
                   />
@@ -113,13 +136,13 @@ export default function PaymentForm({ amount, onSubmit, isProcessing }: PaymentF
                   <Label>CVV</Label>
                   <Input
                     type="password"
-                    maxLength={4}
+                    maxLength={3}
                     placeholder="123"
                     value={paymentData.cvv}
                     onChange={(e) =>
                       setPaymentData({
                         ...paymentData,
-                        cvv: e.target.value.replace(/\D/g, ""),
+                        cvv: e.target.value.replace(/\D/g, "").slice(0, 3),
                       })
                     }
                   />
