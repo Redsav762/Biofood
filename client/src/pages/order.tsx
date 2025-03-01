@@ -38,29 +38,34 @@ export default function Order() {
     const openingTime = new Date(now);
     openingTime.setHours(10, 0, 0); // Set opening time to 10:00
 
-    // If current time is before opening time, return opening time
-    if (now < openingTime) {
-      return {
-        time: "10:00",
-        message: "Время работы кафе: с 10:00. Минимальное время ожидания заказа: 30 минут"
-      };
-    }
-
     // Add 30 minutes to current time
     const minTime = new Date(now);
     minTime.setMinutes(minTime.getMinutes() + 30);
 
+    // If current time + 30 minutes is before opening time, return opening time
+    if (minTime < openingTime) {
+      return {
+        time: "10:00",
+        message: "Время работы кафе: с 10:00"
+      };
+    }
+
+    // Format time as HH:mm
+    const formattedTime = minTime.toLocaleTimeString('ru-RU', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+
     return {
-      time: minTime.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+      time: formattedTime,
       message: "Минимальное время ожидания заказа: 30 минут"
     };
   };
 
   const getMaxPickupTime = () => {
-    const now = new Date();
-    const closingTime = new Date(now);
-    closingTime.setHours(22, 0, 0); // Set closing time to 22:00
-    return closingTime.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const closingTime = "22:00";
+    return closingTime;
   };
 
 
