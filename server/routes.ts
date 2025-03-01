@@ -37,15 +37,23 @@ async function comparePasswords(supplied: string, stored: string) {
 // Middleware to check if user is authenticated and has correct role
 function requireRole(role: string) {
   return async (req: Request, res: any, next: any) => {
+    console.log('Checking role:', role);
+    console.log('Session:', req.session);
+
     if (!req.session.userId) {
+      console.log('No userId in session');
       return res.status(401).json({ error: "Unauthorized" });
     }
 
     const user = await storage.getUser(req.session.userId);
+    console.log('Found user:', user);
+
     if (!user || user.role !== role) {
+      console.log('User role mismatch:', user?.role, 'expected:', role);
       return res.status(403).json({ error: "Forbidden" });
     }
 
+    console.log('Role check passed');
     next();
   };
 }
@@ -67,15 +75,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Auth routes
   app.get("/api/user", async (req: Request, res) => {
+    console.log('GET /api/user - Session:', req.session);
     if (!req.session.userId) {
       return res.status(401).json({ error: "Unauthorized" });
     }
     const user = await storage.getUser(req.session.userId);
+    console.log('Found user:', user);
     res.json(user);
   });
 
   app.post("/api/register", async (req: Request, res) => {
     try {
+      console.log('POST /api/register - Body:', req.body);
       const userData = insertUserSchema.parse(req.body);
 
       // Check if user already exists
@@ -98,15 +109,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Set session
       req.session.userId = user.id;
+      console.log('Created user and set session:', user);
 
       res.json(user);
     } catch (error) {
+      console.error('Register error:', error);
       res.status(400).json({ error: "Invalid user data" });
     }
   });
 
   app.post("/api/login", async (req: Request, res) => {
     try {
+      console.log('POST /api/login - Body:', req.body);
       const { phone, password } = loginSchema.parse(req.body);
 
       const user = await storage.getUserByPhone(phone);
@@ -115,8 +129,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       req.session.userId = user.id;
+      console.log('Login successful, set session:', user);
       res.json(user);
     } catch (error) {
+      console.error('Login error:', error);
       res.status(400).json({ error: "Invalid login data" });
     }
   });
@@ -127,59 +143,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Protected kitchen routes
-  app.use("/api/kitchen/*", requireRole("kitchen_staff"));
-
   // Menu routes
   app.get("/api/menu", async (_req, res) => {
     const items = await storage.getMenuItems();
     res.json(items);
   });
 
-  app.patch("/api/menu/:id/availability", async (req, res) => {
-    const id = parseInt(req.params.id);
-    const available = z.boolean().parse(req.body.available);
-
-    await storage.updateMenuItemAvailability(id, available);
-    res.json({ success: true });
-  });
-
-  // Order routes
-  app.post("/api/orders", async (req, res) => {
-    try {
-      const orderData = insertOrderSchema.parse(req.body);
-      const items = z.array(orderItemSchema).parse(orderData.items);
-
-      // Validate all menu items exist and are available
-      for (const item of items) {
-        const menuItem = await storage.getMenuItem(item.menuItemId);
-        if (!menuItem || !menuItem.available) {
-          return res.status(400).json({
-            error: `Menu item ${item.menuItemId} not available`,
-          });
-        }
-      }
-
-      const order = await storage.createOrder(orderData);
-      res.json(order);
-    } catch (error) {
-      res.status(400).json({ error: "Invalid order data" });
-    }
-  });
-
+  // Orders routes
   app.get("/api/orders", requireRole("kitchen_staff"), async (_req, res) => {
-    const orders = await storage.getOrders();
-    res.json(orders);
-  });
-
-  app.get("/api/orders/:id", async (req, res) => {
-    const id = parseInt(req.params.id);
-    const order = await storage.getOrder(id);
-
-    if (order) {
-      res.json(order);
-    } else {
-      res.status(404).json({ error: "Order not found" });
+    console.log('GET /api/orders - Fetching orders');
+    try {
+      const orders = await storage.getOrders();
+      console.log('Found orders:', orders);
+      res.json(orders);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      res.status(500).json({ error: "Failed to fetch orders" });
     }
   });
 
@@ -191,9 +170,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updateOrderStatus(id, status);
       res.json({ success: true });
     } catch (error) {
+      console.error('Error updating order status:', error);
       res.status(400).json({ error: "Invalid status" });
     }
   });
+
+  // Protected kitchen routes
+  app.use("/api/kitchen/*", requireRole("kitchen_staff"));
+
 
   // Payment routes
   app.post("/api/orders/:id/payment", async (req, res) => {
