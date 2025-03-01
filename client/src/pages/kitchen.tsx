@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import OrderStatus from "@/components/order-status";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { type Order, type MenuItem } from "@shared/schema";
+import { type Order, type MenuItem, type OrderItem } from "@shared/schema";
 
 const statusFlow = {
   pending: "preparing",
@@ -95,7 +95,7 @@ export default function Kitchen() {
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          {order.items.map((item: any) => {
+          {(order.items as OrderItem[]).map((item) => {
             const menuItem = itemsMap.get(item.menuItemId);
             return (
               <div key={item.menuItemId} className="flex justify-between">
