@@ -22,7 +22,7 @@ export default function Menu() {
   });
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div>Загрузка...</div>;
   }
 
   const categories = ["all", ...Array.from(new Set(menuItems.map((item) => item.category)))];
@@ -56,18 +56,19 @@ export default function Menu() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Menu</h1>
+        <h1 className="text-3xl font-bold">Меню</h1>
         <Select
           value={selectedCategory}
           onValueChange={(value) => setSelectedCategory(value)}
         >
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Category" />
+            <SelectValue placeholder="Категория" />
           </SelectTrigger>
           <SelectContent>
             {categories.map((category) => (
               <SelectItem key={category} value={category}>
-                {category.charAt(0).toUpperCase() + category.slice(1)}
+                {category === "all" ? "Все" : 
+                  category.charAt(0).toUpperCase() + category.slice(1)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -85,17 +86,17 @@ export default function Menu() {
           <div className="container flex items-center justify-between">
             <div>
               <span className="text-lg font-medium">
-                {cart.reduce((sum, { quantity }) => sum + quantity, 0)} items
+                {cart.reduce((sum, { quantity }) => sum + quantity, 0)} позиций
               </span>
               <span className="text-lg font-medium ml-4">
-                {(cartTotal / 100).toLocaleString("en-US", {
+                {(cartTotal / 100).toLocaleString("ru-RU", {
                   style: "currency",
-                  currency: "USD",
+                  currency: "RUB",
                 })}
               </span>
             </div>
             <Button onClick={handleContinueToOrder}>
-              Continue to Order
+              Продолжить к оформлению
             </Button>
           </div>
         </div>

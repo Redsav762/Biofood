@@ -8,9 +8,9 @@ interface MenuItemCardProps {
 }
 
 export default function MenuItemCard({ item, onAddToOrder }: MenuItemCardProps) {
-  const formattedPrice = (item.price / 100).toLocaleString("en-US", {
+  const formattedPrice = (item.price / 100).toLocaleString("ru-RU", {
     style: "currency",
-    currency: "USD",
+    currency: "RUB",
   });
 
   return (
@@ -33,7 +33,7 @@ export default function MenuItemCard({ item, onAddToOrder }: MenuItemCardProps) 
           onClick={() => onAddToOrder(item)}
           disabled={!item.available}
         >
-          {item.available ? "Add to Order" : "Not Available"}
+          {item.available ? "Добавить в заказ" : "Нет в наличии"}
         </Button>
       </CardFooter>
     </Card>
