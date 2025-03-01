@@ -8,7 +8,7 @@ interface MenuItemCardProps {
 }
 
 export default function MenuItemCard({ item, onAddToOrder }: MenuItemCardProps) {
-  const formattedPrice = (item.price / 100).toLocaleString("ru-RU", {
+  const formattedPrice = item.price.toLocaleString("ru-RU", {
     style: "currency",
     currency: "RUB",
   });

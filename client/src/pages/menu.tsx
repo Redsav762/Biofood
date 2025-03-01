@@ -89,7 +89,7 @@ export default function Menu() {
                 {cart.reduce((sum, { quantity }) => sum + quantity, 0)} позиций
               </span>
               <span className="text-lg font-medium ml-4">
-                {(cartTotal / 100).toLocaleString("ru-RU", {
+                {cartTotal.toLocaleString("ru-RU", {
                   style: "currency",
                   currency: "RUB",
                 })}
