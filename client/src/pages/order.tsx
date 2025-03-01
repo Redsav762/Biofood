@@ -40,19 +40,27 @@ export default function Order() {
 
     // If current time is before opening time, return opening time
     if (now < openingTime) {
-      return "10:00";
+      return {
+        time: "10:00",
+        message: "Время работы кафе: с 10:00. Минимальное время ожидания заказа: 30 минут"
+      };
     }
 
-    // Otherwise, return current time + 30 minutes
-    now.setMinutes(now.getMinutes() + 30);
-    return now.toTimeString().slice(0, 5);
+    // Add 30 minutes to current time
+    const minTime = new Date(now);
+    minTime.setMinutes(minTime.getMinutes() + 30);
+
+    return {
+      time: minTime.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }),
+      message: "Минимальное время ожидания заказа: 30 минут"
+    };
   };
 
   const getMaxPickupTime = () => {
     const now = new Date();
     const closingTime = new Date(now);
     closingTime.setHours(22, 0, 0); // Set closing time to 22:00
-    return closingTime.toTimeString().slice(0, 5);
+    return closingTime.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   };
 
 
@@ -196,14 +204,14 @@ export default function Order() {
         <div>
           <Input
             type="time"
-            min={getMinPickupTime()}
+            min={getMinPickupTime().time}
             max={getMaxPickupTime()}
             required
             value={formData.pickupTime}
             onChange={(e) => setFormData({ ...formData, pickupTime: e.target.value })}
           />
           <p className="text-sm text-muted-foreground mt-1">
-            Время работы кафе: с 10:00. Минимальное время ожидания заказа: 30 минут
+            {getMinPickupTime().message}
           </p>
         </div>
         <div>
