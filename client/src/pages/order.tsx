@@ -67,7 +67,8 @@ export default function Order() {
         title: "Order placed successfully!",
         description: `Your order #${data.id} has been received.`,
       });
-      setLocation(`/orders/${data.id}`);
+      // Redirect back to menu instead of non-existent order details page
+      setLocation("/menu");
     },
     onError: () => {
       toast({
