@@ -40,7 +40,7 @@ export class MemStorage implements IStorage {
       {
         name: "Классический круассан",
         description: "Слоеное масляное тесто, приготовленное по французскому рецепту",
-        price: 350,
+        price: 250,
         category: "Выпечка",
         imageUrl: "https://images.unsplash.com/photo-1485963631004-f2f00b1d6606",
         available: true,
@@ -48,7 +48,7 @@ export class MemStorage implements IStorage {
       {
         name: "Тост с авокадо",
         description: "Хлеб на закваске с пюре из спелого авокадо",
-        price: 850,
+        price: 290,
         category: "Завтраки",
         imageUrl: "https://images.unsplash.com/photo-1494390248081-4e521a5940db",
         available: true,
@@ -56,7 +56,7 @@ export class MemStorage implements IStorage {
       {
         name: "Капучино",
         description: "Эспрессо с нежной молочной пенкой",
-        price: 450,
+        price: 220,
         category: "Напитки",
         imageUrl: "https://images.unsplash.com/photo-1447078806655-40579c2520d6",
         available: true,

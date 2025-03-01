@@ -108,9 +108,9 @@ export default function Order() {
               {quantity}x {item.name}
             </span>
             <span>
-              {((item.price * quantity) / 100).toLocaleString("en-US", {
+              {(item.price * quantity).toLocaleString("ru-RU", {
                 style: "currency",
-                currency: "USD",
+                currency: "RUB",
               })}
             </span>
           </div>
@@ -123,10 +123,10 @@ export default function Order() {
                 cart.reduce(
                   (sum, { item, quantity }) => sum + item.price * quantity,
                   0
-                ) / 100
-              ).toLocaleString("en-US", {
+                )
+              ).toLocaleString("ru-RU", {
                 style: "currency",
-                currency: "USD",
+                currency: "RUB",
               })}
             </span>
           </div>
