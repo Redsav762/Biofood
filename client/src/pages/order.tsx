@@ -12,7 +12,14 @@ interface OrderFormData {
   name: string;
   phone: string;
   email?: string;
+  pickupTime: string;
   specialInstructions?: string;
+}
+
+interface CartItem {
+  item: MenuItem;
+  quantity: number;
+  notes?: string;
 }
 
 export default function Order() {
@@ -21,8 +28,16 @@ export default function Order() {
   const [formData, setFormData] = useState<OrderFormData>({
     name: "",
     phone: "",
+    pickupTime: "",
   });
-  const [cart, setCart] = useState<Array<{ item: MenuItem; quantity: number }>>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
+
+  // Calculate earliest possible pickup time (30 minutes from now)
+  const getMinPickupTime = () => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 30);
+    return now.toTimeString().slice(0, 5);
+  };
 
   // Load cart data from sessionStorage on component mount
   useEffect(() => {
@@ -30,7 +45,6 @@ export default function Order() {
     if (savedCart) {
       setCart(JSON.parse(savedCart));
     } else {
-      // If no cart data, redirect back to menu
       setLocation("/menu");
     }
   }, [setLocation]);
@@ -46,34 +60,33 @@ export default function Order() {
 
       const orderResponse = await apiRequest("POST", "/api/orders", {
         userId: userData.id,
-        items: cart.map(({ item, quantity }) => ({
+        items: cart.map(({ item, quantity, notes }) => ({
           menuItemId: item.id,
           quantity,
-          notes: "",
+          notes: notes || "",
         })),
         total: cart.reduce(
           (sum, { item, quantity }) => sum + item.price * quantity,
           0
         ),
+        pickupTime: formData.pickupTime,
         specialInstructions: formData.specialInstructions,
       });
       const orderData: Order = await orderResponse.json();
       return orderData;
     },
     onSuccess: (data) => {
-      // Clear cart data after successful order
       sessionStorage.removeItem('cartData');
       toast({
-        title: "Order placed successfully!",
-        description: `Your order #${data.id} has been received.`,
+        title: "Заказ успешно оформлен!",
+        description: `Ваш заказ #${data.id} принят. Время получения: ${formData.pickupTime}`,
       });
-      // Redirect back to menu instead of non-existent order details page
       setLocation("/menu");
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to place order. Please try again.",
+        title: "Ошибка",
+        description: "Не удалось оформить заказ. Пожалуйста, попробуйте снова.",
         variant: "destructive",
       });
     },
@@ -81,10 +94,10 @@ export default function Order() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.phone) {
+    if (!formData.name || !formData.phone || !formData.pickupTime) {
       toast({
-        title: "Error",
-        description: "Please fill in all required fields.",
+        title: "Ошибка",
+        description: "Пожалуйста, заполните все обязательные поля.",
         variant: "destructive",
       });
       return;
@@ -98,36 +111,43 @@ export default function Order() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <h1 className="text-3xl font-bold">Complete Your Order</h1>
+      <h1 className="text-3xl font-bold">Оформление заказа</h1>
 
       <div className="bg-white rounded-lg p-6 shadow-sm">
-        <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
-        {cart.map(({ item, quantity }) => (
-          <div key={item.id} className="flex justify-between py-2">
-            <span>
-              {quantity}x {item.name}
-            </span>
-            <span>
-              {(item.price * quantity).toLocaleString("ru-RU", {
-                style: "currency",
-                currency: "RUB",
-              })}
-            </span>
+        <h2 className="text-xl font-semibold mb-4">Ваш заказ</h2>
+        {cart.map(({ item, quantity, notes }) => (
+          <div key={item.id} className="py-2">
+            <div className="flex justify-between">
+              <span>
+                {quantity}x {item.name}
+              </span>
+              <span>
+                {(item.price * quantity).toLocaleString("ru-RU", {
+                  style: "currency",
+                  currency: "RUB",
+                })}
+              </span>
+            </div>
+            {notes && (
+              <p className="text-sm text-muted-foreground mt-1">
+                Комментарий: {notes}
+              </p>
+            )}
           </div>
         ))}
         <div className="border-t mt-4 pt-4">
           <div className="flex justify-between font-semibold">
-            <span>Total</span>
+            <span>Итого</span>
             <span>
-              {(
-                cart.reduce(
+              {cart
+                .reduce(
                   (sum, { item, quantity }) => sum + item.price * quantity,
                   0
                 )
-              ).toLocaleString("ru-RU", {
-                style: "currency",
-                currency: "RUB",
-              })}
+                .toLocaleString("ru-RU", {
+                  style: "currency",
+                  currency: "RUB",
+                })}
             </span>
           </div>
         </div>
@@ -136,14 +156,14 @@ export default function Order() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <Input
-            placeholder="Name *"
+            placeholder="Имя *"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
         </div>
         <div>
           <Input
-            placeholder="Phone *"
+            placeholder="Телефон *"
             value={formData.phone}
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
           />
@@ -151,14 +171,26 @@ export default function Order() {
         <div>
           <Input
             type="email"
-            placeholder="Email (optional)"
+            placeholder="Email (необязательно)"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
           />
         </div>
         <div>
+          <Input
+            type="time"
+            min={getMinPickupTime()}
+            required
+            value={formData.pickupTime}
+            onChange={(e) => setFormData({ ...formData, pickupTime: e.target.value })}
+          />
+          <p className="text-sm text-muted-foreground mt-1">
+            Минимальное время ожидания: 30 минут
+          </p>
+        </div>
+        <div>
           <Textarea
-            placeholder="Special instructions (optional)"
+            placeholder="Дополнительные инструкции (необязательно)"
             value={formData.specialInstructions}
             onChange={(e) =>
               setFormData({ ...formData, specialInstructions: e.target.value })
@@ -170,7 +202,7 @@ export default function Order() {
           className="w-full"
           disabled={orderMutation.isPending}
         >
-          {orderMutation.isPending ? "Placing Order..." : "Place Order"}
+          {orderMutation.isPending ? "Оформление заказа..." : "Оформить заказ"}
         </Button>
       </form>
     </div>

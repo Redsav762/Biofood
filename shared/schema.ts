@@ -25,6 +25,7 @@ export const orders = pgTable("orders", {
   status: text("status").notNull().default("pending"),
   items: jsonb("items").notNull(),
   total: integer("total").notNull(),
+  pickupTime: text("pickup_time").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   specialInstructions: text("special_instructions"),
 });
@@ -41,13 +42,14 @@ export const insertOrderSchema = createInsertSchema(orders).pick({
   userId: true,
   items: true,
   total: true,
+  pickupTime: true,
   specialInstructions: true,
 });
 
 export const orderItemSchema = z.object({
   menuItemId: z.number(),
   quantity: z.number().min(1),
-  notes: z.string().optional(),
+  notes: z.string(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

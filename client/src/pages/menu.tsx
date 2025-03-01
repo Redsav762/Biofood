@@ -12,10 +12,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+interface CartItem {
+  item: MenuItem;
+  quantity: number;
+  notes?: string;
+}
+
 export default function Menu() {
   const [, navigate] = useLocation();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [cart, setCart] = useState<Array<{ item: MenuItem; quantity: number }>>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
 
   const { data: menuItems = [], isLoading } = useQuery<MenuItem[]>({
     queryKey: ["/api/menu"],
@@ -30,15 +36,15 @@ export default function Menu() {
     ? menuItems
     : menuItems.filter((item) => item.category === selectedCategory);
 
-  const handleAddToOrder = (item: MenuItem) => {
+  const handleAddToOrder = (item: MenuItem, notes?: string) => {
     setCart((prev) => {
       const existing = prev.find((i) => i.item.id === item.id);
       if (existing) {
         return prev.map((i) =>
-          i.item.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+          i.item.id === item.id ? { ...i, quantity: i.quantity + 1, notes } : i
         );
       }
-      return [...prev, { item, quantity: 1 }];
+      return [...prev, { item, quantity: 1, notes }];
     });
   };
 
@@ -48,7 +54,6 @@ export default function Menu() {
   );
 
   const handleContinueToOrder = () => {
-    // Store cart data in sessionStorage before navigation
     sessionStorage.setItem('cartData', JSON.stringify(cart));
     navigate('/order');
   };
