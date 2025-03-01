@@ -9,6 +9,14 @@ const statusColors = {
   cancelled: "bg-red-500",
 };
 
+const statusTranslations = {
+  pending: "Новый",
+  preparing: "Готовится",
+  ready: "Готов",
+  completed: "Выполнен",
+  cancelled: "Отменён",
+};
+
 interface OrderStatusProps {
   order: Order;
   className?: string;
@@ -22,7 +30,7 @@ export default function OrderStatus({ order, className }: OrderStatusProps) {
         className || ""
       }`}
     >
-      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+      {statusTranslations[order.status as keyof typeof statusTranslations]}
     </Badge>
   );
 }

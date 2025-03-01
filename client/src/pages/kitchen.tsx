@@ -12,12 +12,20 @@ const statusFlow = {
   ready: "completed",
 };
 
+const statusTranslations = {
+  pending: "Новый",
+  preparing: "Готовится",
+  ready: "Готов",
+  completed: "Выполнен",
+  cancelled: "Отменён",
+};
+
 export default function Kitchen() {
   const { toast } = useToast();
 
   const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({
     queryKey: ["/api/orders"],
-    refetchInterval: 5000, // Refresh every 5 seconds
+    refetchInterval: 5000, // Обновление каждые 5 секунд
   });
 
   const { data: menuItems = [], isLoading: menuLoading } = useQuery<MenuItem[]>({
@@ -33,15 +41,15 @@ export default function Kitchen() {
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to update order status",
+        title: "Ошибка",
+        description: "Не удалось обновить статус заказа",
         variant: "destructive",
       });
     },
   });
 
   if (ordersLoading || menuLoading) {
-    return <div>Loading...</div>;
+    return <div>Загрузка...</div>;
   }
 
   const itemsMap = new Map(menuItems.map((item) => [item.id, item]));
@@ -61,11 +69,29 @@ export default function Kitchen() {
     }
   };
 
+  const getNextStatusButton = (currentStatus: string) => {
+    const nextStatus = statusFlow[currentStatus as keyof typeof statusFlow];
+    if (!nextStatus) return null;
+
+    const buttonText = {
+      preparing: "Начать готовить",
+      ready: "Готово к выдаче",
+      completed: "Выдано",
+    }[nextStatus];
+
+    return buttonText;
+  };
+
   const renderOrderCard = (order: Order) => (
     <Card key={order.id} className="mb-4">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Order #{order.id}</CardTitle>
-        <OrderStatus order={order} />
+        <CardTitle>Заказ #{order.id}</CardTitle>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">
+            Время получения: {order.pickupTime}
+          </span>
+          <OrderStatus order={order} />
+        </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
@@ -78,7 +104,7 @@ export default function Kitchen() {
                 </span>
                 {item.notes && (
                   <span className="text-sm text-muted-foreground">
-                    Note: {item.notes}
+                    Примечание: {item.notes}
                   </span>
                 )}
               </div>
@@ -86,7 +112,7 @@ export default function Kitchen() {
           })}
           {order.specialInstructions && (
             <div className="mt-4 text-sm text-muted-foreground">
-              <strong>Special Instructions:</strong> {order.specialInstructions}
+              <strong>Особые инструкции:</strong> {order.specialInstructions}
             </div>
           )}
         </div>
@@ -96,7 +122,7 @@ export default function Kitchen() {
             onClick={() => handleUpdateStatus(order)}
             disabled={updateStatusMutation.isPending}
           >
-            Mark as {statusFlow[order.status as keyof typeof statusFlow]}
+            {getNextStatusButton(order.status)}
           </Button>
         )}
       </CardContent>
@@ -105,16 +131,16 @@ export default function Kitchen() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Kitchen Dashboard</h1>
+      <h1 className="text-3xl font-bold">Панель управления кухней</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <h2 className="text-xl font-semibold mb-4">Active Orders</h2>
+          <h2 className="text-xl font-semibold mb-4">Активные заказы</h2>
           {activeOrders.map(renderOrderCard)}
         </div>
 
         <div>
-          <h2 className="text-xl font-semibold mb-4">Completed Orders</h2>
+          <h2 className="text-xl font-semibold mb-4">Выполненные заказы</h2>
           {completedOrders.slice(0, 5).map(renderOrderCard)}
         </div>
       </div>
