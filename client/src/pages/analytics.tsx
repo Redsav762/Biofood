@@ -29,13 +29,17 @@ interface TimeSlotData {
 }
 
 export default function Analytics() {
-  const { data: popularItems = [] } = useQuery<PopularItem[]>({
+  const { data: popularItems = [], isLoading: isLoadingPopular } = useQuery<PopularItem[]>({
     queryKey: ["/api/analytics/popular-items"],
   });
 
-  const { data: timeSlots = [] } = useQuery<TimeSlotData[]>({
+  const { data: timeSlots = [], isLoading: isLoadingTimeSlots } = useQuery<TimeSlotData[]>({
     queryKey: ["/api/analytics/time-slots"],
   });
+
+  if (isLoadingPopular || isLoadingTimeSlots) {
+    return <div>Загрузка...</div>;
+  }
 
   return (
     <div className="space-y-6">
