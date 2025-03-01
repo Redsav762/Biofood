@@ -70,7 +70,62 @@ export class MemStorage implements IStorage {
         imageUrl: "https://images.unsplash.com/photo-1447078806655-40579c2520d6",
         available: true,
       },
-      // Добавляем остальные тестовые блюда
+      {
+        name: "Греческий салат",
+        description: "Свежие овощи, оливки и сыр фета с оливковым маслом",
+        price: 280,
+        category: "Салаты",
+        imageUrl: "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe",
+        available: true,
+      },
+      {
+        name: "Грибной крем-суп",
+        description: "Нежный суп-пюре из шампиньонов со сливками",
+        price: 260,
+        category: "Супы",
+        imageUrl: "https://images.unsplash.com/photo-1547592166-23ac45744acd",
+        available: true,
+      },
+      {
+        name: "Цезарь с курицей",
+        description: "Классический салат с куриным филе и соусом Цезарь",
+        price: 310,
+        category: "Салаты",
+        imageUrl: "https://images.unsplash.com/photo-1550304943-4f24f54ddde9",
+        available: true,
+      },
+      {
+        name: "Борщ",
+        description: "Традиционный суп со сметаной и зеленью",
+        price: 270,
+        category: "Супы",
+        imageUrl: "https://images.unsplash.com/photo-1594756202469-9ff9799b2e4e",
+        available: true,
+      },
+      {
+        name: "Американо",
+        description: "Классический черный кофе",
+        price: 180,
+        category: "Напитки",
+        imageUrl: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd",
+        available: true,
+      },
+      {
+        name: "Панкейки",
+        description: "Пышные блинчики с кленовым сиропом и ягодами",
+        price: 240,
+        category: "Завтраки",
+        imageUrl: "https://images.unsplash.com/photo-1528207776546-365bb710ee93",
+        available: true,
+      },
+      {
+        name: "Чизкейк",
+        description: "Нежный десерт из сливочного сыра с ягодным соусом",
+        price: 230,
+        category: "Десерты",
+        imageUrl: "https://images.unsplash.com/photo-1524351199678-941a58a3df50",
+        available: true,
+      }
     ];
 
     sampleItems.forEach((item) => this.createMenuItem(item));
