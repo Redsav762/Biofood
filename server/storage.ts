@@ -43,6 +43,37 @@ export class MemStorage implements IStorage {
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000 // 24 hours
     });
+
+    // Add sample menu items
+    const sampleItems: InsertMenuItem[] = [
+      {
+        name: "Классический круассан",
+        description: "Слоеное масляное тесто, приготовленное по французскому рецепту",
+        price: 250,
+        category: "Выпечка",
+        imageUrl: "https://images.unsplash.com/photo-1485963631004-f2f00b1d6606",
+        available: true,
+      },
+      {
+        name: "Тост с авокадо",
+        description: "Хлеб на закваске с пюре из спелого авокадо",
+        price: 290,
+        category: "Завтраки",
+        imageUrl: "https://images.unsplash.com/photo-1494390248081-4e521a5940db",
+        available: true,
+      },
+      {
+        name: "Капучино",
+        description: "Эспрессо с нежной молочной пенкой",
+        price: 220,
+        category: "Напитки",
+        imageUrl: "https://images.unsplash.com/photo-1447078806655-40579c2520d6",
+        available: true,
+      },
+      // Добавляем остальные тестовые блюда
+    ];
+
+    sampleItems.forEach((item) => this.createMenuItem(item));
   }
 
   // User operations

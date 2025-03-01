@@ -4,29 +4,8 @@ import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
-
-interface AuthFormData {
-  name: string;
-  phone: string;
-  email?: string;
-  password: string;
-  role: string;
-}
+import { type InsertUser } from "@shared/schema";
 
 interface AuthProps {
   onAuthSuccess?: () => void;
@@ -36,7 +15,7 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [isLogin, setIsLogin] = useState(true);
-  const [formData, setFormData] = useState<AuthFormData>({
+  const [formData, setFormData] = useState<InsertUser>({
     name: "",
     phone: "",
     password: "",
@@ -44,7 +23,7 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
   });
 
   const authMutation = useMutation({
-    mutationFn: async (data: AuthFormData) => {
+    mutationFn: async (data: InsertUser) => {
       const endpoint = isLogin ? "/api/login" : "/api/register";
       const response = await apiRequest("POST", endpoint, data);
       return response.json();
@@ -91,29 +70,13 @@ export default function Auth({ onAuthSuccess }: AuthProps) {
     <div className="w-full">
       <form onSubmit={handleSubmit} className="space-y-4">
         {!isLogin && (
-          <>
-            <Input
-              placeholder="Имя *"
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-            />
-            <Select
-              value={formData.role}
-              onValueChange={(value) =>
-                setFormData({ ...formData, role: value })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Выберите роль" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="customer">Посетитель</SelectItem>
-                <SelectItem value="kitchen_staff">Работник кухни</SelectItem>
-              </SelectContent>
-            </Select>
-          </>
+          <Input
+            placeholder="Имя *"
+            value={formData.name}
+            onChange={(e) =>
+              setFormData({ ...formData, name: e.target.value })
+            }
+          />
         )}
         <Input
           placeholder="Телефон *"
