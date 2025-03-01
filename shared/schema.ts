@@ -7,6 +7,8 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   phone: text("phone").notNull(),
   email: text("email"),
+  password: text("password"),
+  role: text("role").notNull().default("customer"), // "customer" or "kitchen_staff"
 });
 
 export const menuItems = pgTable("menu_items", {
@@ -65,6 +67,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
   name: true,
   phone: true,
   email: true,
+  password: true,
+  role: true,
 });
 
 export const insertMenuItemSchema = createInsertSchema(menuItems);
@@ -88,6 +92,11 @@ export const paymentSchema = z.object({
   expiryDate: z.string(),
   cvv: z.string().min(3).max(4),
   paymentMethod: z.string(),
+});
+
+export const loginSchema = z.object({
+  phone: z.string(),
+  password: z.string(),
 });
 
 // Types

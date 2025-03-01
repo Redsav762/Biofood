@@ -5,17 +5,106 @@ import {
   insertUserSchema,
   insertOrderSchema,
   orderItemSchema,
-  paymentSchema
+  paymentSchema,
+  loginSchema,
 } from "@shared/schema";
 import { z } from "zod";
+import { scrypt, randomBytes, timingSafeEqual } from "crypto";
+import { promisify } from "util";
+
+const scryptAsync = promisify(scrypt);
+
+async function hashPassword(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
+
+async function comparePasswords(supplied: string, stored: string) {
+  const [hashed, salt] = stored.split(".");
+  const hashedBuf = Buffer.from(hashed, "hex");
+  const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+  return timingSafeEqual(hashedBuf, suppliedBuf);
+}
+
+// Middleware to check if user is authenticated and has correct role
+function requireRole(role: string) {
+  return async (req: any, res: any, next: any) => {
+    const userId = req.session.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const user = await storage.getUser(userId);
+    if (!user || user.role !== role) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    next();
+  };
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Auth routes
+  app.post("/api/register", async (req, res) => {
+    try {
+      const userData = insertUserSchema.parse(req.body);
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByPhone(userData.phone);
+      if (existingUser) {
+        return res.status(400).json({ error: "User already exists" });
+      }
+
+      // Hash password
+      const hashedPassword = await hashPassword(userData.password);
+
+      // Create user
+      const user = await storage.createUser({
+        ...userData,
+        password: hashedPassword,
+      });
+
+      // Set session
+      req.session.userId = user.id;
+
+      res.json(user);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid user data" });
+    }
+  });
+
+  app.post("/api/login", async (req, res) => {
+    try {
+      const { phone, password } = loginSchema.parse(req.body);
+
+      const user = await storage.getUserByPhone(phone);
+      if (!user || !user.password || !(await comparePasswords(password, user.password))) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      req.session.userId = user.id;
+      res.json(user);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid login data" });
+    }
+  });
+
+  app.post("/api/logout", (req, res) => {
+    req.session.destroy(() => {
+      res.json({ success: true });
+    });
+  });
+
+  // Protected kitchen routes
+  app.use("/api/kitchen/*", requireRole("kitchen_staff"));
+
   // User routes
   app.post("/api/users", async (req, res) => {
     try {
       const user = insertUserSchema.parse(req.body);
       const existingUser = await storage.getUserByPhone(user.phone);
-      
+
       if (existingUser) {
         res.json(existingUser);
       } else {
@@ -36,7 +125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/menu/:id/availability", async (req, res) => {
     const id = parseInt(req.params.id);
     const available = z.boolean().parse(req.body.available);
-    
+
     await storage.updateMenuItemAvailability(id, available);
     res.json({ success: true });
   });
@@ -46,17 +135,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const orderData = insertOrderSchema.parse(req.body);
       const items = z.array(orderItemSchema).parse(orderData.items);
-      
+
       // Validate all menu items exist and are available
       for (const item of items) {
         const menuItem = await storage.getMenuItem(item.menuItemId);
         if (!menuItem || !menuItem.available) {
-          return res.status(400).json({ 
-            error: `Menu item ${item.menuItemId} not available` 
+          return res.status(400).json({
+            error: `Menu item ${item.menuItemId} not available`,
           });
         }
       }
-      
+
       const order = await storage.createOrder(orderData);
       res.json(order);
     } catch (error) {
@@ -64,7 +153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/orders", async (_req, res) => {
+  app.get("/api/orders", requireRole("kitchen_staff"), async (_req, res) => {
     const orders = await storage.getOrders();
     res.json(orders);
   });
@@ -72,7 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/orders/:id", async (req, res) => {
     const id = parseInt(req.params.id);
     const order = await storage.getOrder(id);
-    
+
     if (order) {
       res.json(order);
     } else {
@@ -80,11 +169,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/orders/:id/status", async (req, res) => {
+  app.patch("/api/orders/:id/status", requireRole("kitchen_staff"), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const status = z.string().parse(req.body.status);
-      
+
       await storage.updateOrderStatus(id, status);
       res.json({ success: true });
     } catch (error) {
@@ -105,9 +194,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Calculate payment amount based on type
-      const amount = paymentType === "prepayment" 
-        ? Math.floor(order.total * 0.5)  // 50% for prepayment
-        : order.total - Math.floor(order.total * 0.5); // Remaining amount
+      const amount =
+        paymentType === "prepayment"
+          ? Math.floor(order.total * 0.5) // 50% for prepayment
+          : order.total - Math.floor(order.total * 0.5); // Remaining amount
 
       await storage.createPayment({
         orderId,
@@ -117,7 +207,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Update order payment status
-      const newPaymentStatus = paymentType === "prepayment" ? "partially_paid" : "paid";
+      const newPaymentStatus =
+        paymentType === "prepayment" ? "partially_paid" : "paid";
       await storage.updateOrderStatus(orderId, "preparing");
       await storage.updateOrderPaymentStatus(orderId, newPaymentStatus);
 
